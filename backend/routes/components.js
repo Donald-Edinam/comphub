@@ -3,20 +3,32 @@ const router = express.Router();
 const db = require("../db/database");
 const validateFields = require("../middleware/validateFields");
 const { successResponse, errorResponse } = require("../utils/response");
+const authenticateToken = require("../middleware/auth");
+const upload = require("../middleware/upload");
 
-// Fields we want to require for Component
 const componentRequiredFields = ["name"];
+router.use(authenticateToken);
 
 // Create Component
-router.post("/", validateFields(componentRequiredFields), (req, res, next) => {
-  try {
-    const { name, type, quantity, supplier, price, status, description } = req.body;
-    const sql = `INSERT INTO components (name, type, quantity, supplier, price, status, description)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`;
+router.post("/", authenticateToken, upload.single("image"), validateFields(componentRequiredFields), (req, res, next) => {
+  const { name, type, quantity, supplier, price, status, description } = req.body;
+  const userId = req.user.id;
 
-    db.run(sql, [name, type, quantity, supplier, price, status, description], function (err) {
-      if (err) return next(err); 
-          return successResponse(res, "Component created successfully", {
+  // Check if request has an image file
+  if (!req.file) {
+      return errorResponse(res, "Image is required", 400);
+    }
+
+  const imageUrl = req.file ? req.file.path : null; // Cloudinary gives file.path as URL
+
+
+  const sql = `INSERT INTO components (name, type, quantity, supplier, price, status, description, image_url, user_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+  db.run(sql, [name, type, quantity, supplier, price, status, description, imageUrl, userId], function (err) {
+    if (err) return next(err);
+
+    return successResponse(res, "Component created successfully", {
       id: this.lastID,
       name,
       type,
@@ -25,53 +37,63 @@ router.post("/", validateFields(componentRequiredFields), (req, res, next) => {
       price,
       status,
       description,
+      image_url: imageUrl,
+      user_id: userId,
     }, 201);
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Get All Components
-router.get("/", (req, res) => {
-  db.all("SELECT * FROM components", [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    return successResponse(res, "Components retrieved successfully", rows);
   });
 });
 
-// Get Component by ID
+// 👁️ Get all components for logged-in user
+router.get("/", (req, res, next) => {
+  const userId = req.user.id;
+  db.all("SELECT * FROM components WHERE user_id = ?", [userId], (err, rows) => {
+    if (err) return next(err);
+    return successResponse(res, "Your components retrieved successfully", rows);
+  });
+});
+
+// 👁️ Get one component (only if owned)
 router.get("/:id", (req, res, next) => {
   const { id } = req.params;
-  db.get("SELECT * FROM components WHERE id = ?", [id], (err, row) => {
+  const userId = req.user.id;
+  db.get("SELECT * FROM components WHERE id = ? AND user_id = ?", [id, userId], (err, row) => {
     if (err) return next(err);
-       if (!row) return errorResponse(res, "Component not found", 404);
-        return successResponse(res, "Component retrieved successfully", row);
-
+    if (!row) return errorResponse(res, "Component not found or not yours", 404);
+    return successResponse(res, "Component retrieved successfully", row);
   });
 });
 
-router.put("/:id", validateFields(componentRequiredFields), (req, res, next) => {
+// Update component (only if owned)
+router.put("/:id", authenticateToken, upload.single("image"), validateFields(componentRequiredFields), (req, res, next) => {
   const { id } = req.params;
+  const userId = req.user.id;
   const { name, type, quantity, supplier, price, status, description } = req.body;
+  const imageUrl = req.file ? req.file.path : null;
+
   const sql = `UPDATE components 
-               SET name=?, type=?, quantity=?, supplier=?, price=?, status=?, description=?, last_updated=CURRENT_TIMESTAMP 
-               WHERE id=?`;
-  db.run(sql, [name, type, quantity, supplier, price, status, description, id], function (err, row) {
+               SET name=?, type=?, quantity=?, supplier=?, price=?, status=?, description=?, 
+                   image_url=COALESCE(?, image_url), last_updated=CURRENT_TIMESTAMP
+               WHERE id=? AND user_id=?`;
+
+  db.run(sql, [name, type, quantity, supplier, price, status, description, imageUrl, id, userId], function (err) {
     if (err) return next(err);
-    if (this.changes === 0) return errorResponse(res, "Component not found", 404);
-    return successResponse(res, "Component updated successfully", row);
+    if (this.changes === 0) return errorResponse(res, "Component not found or not yours", 404);
+
+    return successResponse(res, "Component updated successfully");
   });
 });
 
-// Delete Component
+// Delete component (only if owned)
 router.delete("/:id", (req, res, next) => {
   const { id } = req.params;
-  db.run("DELETE FROM components WHERE id = ?", [id], function (err) {
+  const userId = req.user.id;
+
+  db.run("DELETE FROM components WHERE id = ? AND user_id = ?", [id, userId], function (err) {
     if (err) return next(err);
-    if (this.changes === 0) return errorResponse(res, "Component not found", 404);
+    if (this.changes === 0) return errorResponse(res, "Component not found or not yours", 404);
     return successResponse(res, "Component deleted successfully");
   });
 });
+
 
 module.exports = router;

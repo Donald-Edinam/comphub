@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const db = require("./db/database");
+const authRoutes = require("./routes/auth")
 const componentRoutes = require("./routes/components");
 
 const app = express();
@@ -12,6 +13,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Routes
+app.use("/auth", authRoutes);
 app.use("/components", componentRoutes);
 
 // Global error handler

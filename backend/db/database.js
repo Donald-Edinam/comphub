@@ -5,7 +5,18 @@ const db = new sqlite3.Database("./components.db", (err) => {
   else console.log("Connected to SQLite database.");
 });
 
-// Create components table
+// Users table
+db.run(`
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+
+// Components table
 db.run(`
   CREATE TABLE IF NOT EXISTS components (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -16,7 +27,10 @@ db.run(`
     price REAL,
     status TEXT,
     description TEXT,
-    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    user_id INTEGER,
+    image_url TEXT,
+    FOREIGN KEY(user_id) REFERENCES users(id)
   )
 `);
 
