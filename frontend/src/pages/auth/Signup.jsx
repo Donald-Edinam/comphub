@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 const UserIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
     <circle cx="12" cy="7" r="4"></circle>
@@ -40,6 +42,11 @@ const Signin1 = () => {
   const [fullName, setFullName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  
+  const { signup } = useAuth();
+  const navigate = useNavigate();
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
@@ -47,13 +54,28 @@ const Signin1 = () => {
     if (step < 3) {
       setStep(step + 1);
     }
+    // Clear any previous errors when moving to next step
+    setError('');
   };
-  const handleSubmit = e => {
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
+    setError('');
+    setSuccess('');
+
+    const result = await signup(fullName, email, password);
+    
+    if (result.success) {
+      setSuccess('Account created successfully! Redirecting to login...');
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
+    } else {
+      setError(result.error);
+    }
+    
+    setIsLoading(false);
   };
   return <div className="flex items-center justify-center h-screen p-4">
       <div className="w-full max-w-md">
@@ -164,6 +186,18 @@ const Signin1 = () => {
                     </div>
                   </div>
                 </div>
+
+                {error && (
+                  <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+                    {error}
+                  </div>
+                )}
+
+                {success && (
+                  <div className="text-sm text-green-600 bg-green-50 p-3 rounded-md">
+                    {success}
+                  </div>
+                )}
 
                 <button type="submit" disabled={isLoading} className="signin-button w-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
                   {isLoading ? <div className="flex items-center justify-center gap-2">

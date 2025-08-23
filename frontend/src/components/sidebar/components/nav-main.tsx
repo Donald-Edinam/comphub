@@ -1,4 +1,5 @@
 import { MoreHorizontal, type LucideIcon } from "lucide-react"
+import { Link, useLocation } from "react-router-dom"
 
 import {
   DropdownMenu,
@@ -29,34 +30,57 @@ export function NavMain({
   }[]
 }) {
   const { isMobile } = useSidebar()
+  const location = useLocation()
 
   return (
     <SidebarGroup>
       <SidebarMenu>
-        {items.map((item) => (
-          <DropdownMenu key={item.title}>
-            <SidebarMenuItem>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
-                  {item.title} <MoreHorizontal className="ml-auto" />
+        {items.map((item) => {
+          const isCurrentPage = location.pathname === item.url
+          const hasSubItems = item.items && item.items.length > 0
+
+          if (!hasSubItems) {
+            // Single navigation item without dropdown
+            return (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton asChild isActive={isCurrentPage}>
+                  <Link to={item.url} className="flex items-center gap-2">
+                    {item.icon && <item.icon className="size-4" />}
+                    {item.title}
+                  </Link>
                 </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              {item.items?.length ? (
+              </SidebarMenuItem>
+            )
+          }
+
+          // Navigation item with dropdown
+          return (
+            <DropdownMenu key={item.title}>
+              <SidebarMenuItem>
+                <DropdownMenuTrigger asChild>
+                  <SidebarMenuButton className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
+                    <div className="flex items-center gap-2">
+                      {item.icon && <item.icon className="size-4" />}
+                      {item.title}
+                    </div>
+                    <MoreHorizontal className="ml-auto size-4" />
+                  </SidebarMenuButton>
+                </DropdownMenuTrigger>
                 <DropdownMenuContent
                   side={isMobile ? "bottom" : "right"}
                   align={isMobile ? "end" : "start"}
                   className="min-w-56 rounded-lg"
                 >
-                  {item.items.map((item) => (
-                    <DropdownMenuItem asChild key={item.title}>
-                      <a href={item.url}>{item.title}</a>
+                  {item.items?.map((subItem) => (
+                    <DropdownMenuItem asChild key={subItem.title}>
+                      <Link to={subItem.url}>{subItem.title}</Link>
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
-              ) : null}
-            </SidebarMenuItem>
-          </DropdownMenu>
-        ))}
+              </SidebarMenuItem>
+            </DropdownMenu>
+          )
+        })}
       </SidebarMenu>
     </SidebarGroup>
   )

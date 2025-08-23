@@ -1,8 +1,7 @@
 import * as React from "react"
-import { GalleryVerticalEnd } from "lucide-react"
-
+import { Package, Home, Plus, BarChart3, Settings, User } from "lucide-react"
+import { useAuth } from "../../../context/AuthContext"
 import { NavMain } from "../components/nav-main"
-import { SidebarOptInForm } from "../components/sidebar-opt-in-form"
 import {
   Sidebar,
   SidebarContent,
@@ -14,131 +13,61 @@ import {
   SidebarRail,
 } from "../components/ui/sidebar"
 
-// This is sample data.
+// Component tracker navigation data
 const data = {
   navMain: [
     {
-      title: "Getting Started",
+      title: "Dashboard",
+      url: "/dashboard",
+      icon: Home,
+      isActive: true,
+    },
+    {
+      title: "Components",
       url: "#",
+      icon: Package,
       items: [
         {
-          title: "Installation",
-          url: "#",
+          title: "All Components",
+          url: "/dashboard/components",
         },
         {
-          title: "Project Structure",
-          url: "#",
+          title: "Add Component",
+          url: "/dashboard/components/add",
+        },
+        {
+          title: "Low Stock",
+          url: "/dashboard/components/low-stock",
         },
       ],
     },
     {
-      title: "Building Your Application",
+      title: "Reports",
       url: "#",
+      icon: BarChart3,
       items: [
         {
-          title: "Routing",
-          url: "#",
+          title: "Inventory Report",
+          url: "/dashboard/reports/inventory",
         },
         {
-          title: "Data Fetching",
-          url: "#",
-          isActive: true,
-        },
-        {
-          title: "Rendering",
-          url: "#",
-        },
-        {
-          title: "Caching",
-          url: "#",
-        },
-        {
-          title: "Styling",
-          url: "#",
-        },
-        {
-          title: "Optimizing",
-          url: "#",
-        },
-        {
-          title: "Configuring",
-          url: "#",
-        },
-        {
-          title: "Testing",
-          url: "#",
-        },
-        {
-          title: "Authentication",
-          url: "#",
-        },
-        {
-          title: "Deploying",
-          url: "#",
-        },
-        {
-          title: "Upgrading",
-          url: "#",
-        },
-        {
-          title: "Examples",
-          url: "#",
+          title: "Stock Movement",
+          url: "/dashboard/reports/movement",
         },
       ],
     },
     {
-      title: "API Reference",
+      title: "Settings",
       url: "#",
+      icon: Settings,
       items: [
         {
-          title: "Components",
-          url: "#",
+          title: "Profile",
+          url: "/dashboard/settings/profile",
         },
         {
-          title: "File Conventions",
-          url: "#",
-        },
-        {
-          title: "Functions",
-          url: "#",
-        },
-        {
-          title: "next.config.js Options",
-          url: "#",
-        },
-        {
-          title: "CLI",
-          url: "#",
-        },
-        {
-          title: "Edge Runtime",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Architecture",
-      url: "#",
-      items: [
-        {
-          title: "Accessibility",
-          url: "#",
-        },
-        {
-          title: "Fast Refresh",
-          url: "#",
-        },
-        {
-          title: "Next.js Compiler",
-          url: "#",
-        },
-        {
-          title: "Supported Browsers",
-          url: "#",
-        },
-        {
-          title: "Turbopack",
-          url: "#",
+          title: "Preferences",
+          url: "/dashboard/settings/preferences",
         },
       ],
     },
@@ -146,19 +75,21 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user, logout } = useAuth();
+
   return (
     <Sidebar {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <a href="#">
+              <a href="/dashboard">
                 <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <GalleryVerticalEnd className="size-4" />
+                  <Package className="size-4" />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-medium">Documentation</span>
-                  <span className="">v1.0.0</span>
+                  <span className="font-medium">Component Tracker</span>
+                  <span className="text-xs">Repair Shop Inventory</span>
                 </div>
               </a>
             </SidebarMenuButton>
@@ -169,8 +100,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain items={data.navMain} />
       </SidebarContent>
       <SidebarFooter>
-        <div className="p-1">
-          <SidebarOptInForm />
+        <div className="p-4">
+          <div className="flex items-center gap-3 p-2 rounded-lg bg-sidebar-accent">
+            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+              <User className="size-4" />
+            </div>
+            <div className="flex flex-col gap-0.5 leading-none flex-1">
+              <span className="font-medium text-sm">{user?.email}</span>
+              <span className="text-xs text-muted-foreground">Shop Owner</span>
+            </div>
+            <button
+              onClick={logout}
+              className="text-xs text-red-600 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50"
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </SidebarFooter>
       <SidebarRail />
