@@ -53,6 +53,7 @@ function AppRoutes() {
         <Route index element={<Dashboard />} />
         <Route path="components" element={<Components />} />
         <Route path="components/add" element={<AddComponent />} />
+        <Route path="components/edit/:id" element={<AddComponent />} />
       </Route>
     </Routes>
   );

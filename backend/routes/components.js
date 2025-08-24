@@ -14,13 +14,7 @@ router.post("/", authenticateToken, upload.single("image"), validateFields(compo
   const { name, type, quantity, supplier, price, status, description } = req.body;
   const userId = req.user.id;
 
-  // Check if request has an image file
-  if (!req.file) {
-      return errorResponse(res, "Image is required", 400);
-    }
-
   const imageUrl = req.file ? req.file.path : null; // Cloudinary gives file.path as URL
-
 
   const sql = `INSERT INTO components (name, type, quantity, supplier, price, status, description, image_url, user_id)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
@@ -70,12 +64,23 @@ router.put("/:id", authenticateToken, upload.single("image"), validateFields(com
   const { name, type, quantity, supplier, price, status, description } = req.body;
   const imageUrl = req.file ? req.file.path : null;
 
-  const sql = `UPDATE components 
-               SET name=?, type=?, quantity=?, supplier=?, price=?, status=?, description=?, 
-                   image_url=COALESCE(?, image_url), last_updated=CURRENT_TIMESTAMP
-               WHERE id=? AND user_id=?`;
+  // Build dynamic SQL based on whether image is provided
+  let sql, params;
+  if (imageUrl) {
+    sql = `UPDATE components 
+           SET name=?, type=?, quantity=?, supplier=?, price=?, status=?, description=?, 
+               image_url=?, last_updated=CURRENT_TIMESTAMP
+           WHERE id=? AND user_id=?`;
+    params = [name, type, quantity, supplier, price, status, description, imageUrl, id, userId];
+  } else {
+    sql = `UPDATE components 
+           SET name=?, type=?, quantity=?, supplier=?, price=?, status=?, description=?, 
+               last_updated=CURRENT_TIMESTAMP
+           WHERE id=? AND user_id=?`;
+    params = [name, type, quantity, supplier, price, status, description, id, userId];
+  }
 
-  db.run(sql, [name, type, quantity, supplier, price, status, description, imageUrl, id, userId], function (err) {
+  db.run(sql, params, function (err) {
     if (err) return next(err);
     if (this.changes === 0) return errorResponse(res, "Component not found or not yours", 404);
 

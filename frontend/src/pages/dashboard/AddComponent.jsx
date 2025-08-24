@@ -1,10 +1,14 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { componentsAPI } from '../../services/api';
 
 export default function AddComponent() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEditMode = !!id;
+
   const [loading, setLoading] = useState(false);
+  const [loadingComponent, setLoadingComponent] = useState(isEditMode);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
@@ -16,6 +20,40 @@ export default function AddComponent() {
     description: ''
   });
   const [image, setImage] = useState(null);
+  const [currentImageUrl, setCurrentImageUrl] = useState('');
+
+  // Load component data when in edit mode
+  useEffect(() => {
+    if (isEditMode && id) {
+      fetchComponent();
+    }
+  }, [isEditMode, id]);
+
+  const fetchComponent = async () => {
+    try {
+      setLoadingComponent(true);
+      const response = await componentsAPI.getById(parseInt(id));
+
+      if (response.data.success) {
+        const component = response.data.data;
+        setFormData({
+          name: component.name || '',
+          type: component.type || '',
+          quantity: component.quantity?.toString() || '',
+          supplier: component.supplier || '',
+          price: component.price?.toString() || '',
+          status: component.status || 'Available',
+          description: component.description || ''
+        });
+        setCurrentImageUrl(component.image_url || '');
+      }
+    } catch (error) {
+      console.error('Error fetching component:', error);
+      setError('Failed to load component data');
+    } finally {
+      setLoadingComponent(false);
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({
@@ -38,41 +76,61 @@ export default function AddComponent() {
       Object.keys(formData).forEach(key => {
         submitData.append(key, formData[key]);
       });
-      
+
       if (image) {
         submitData.append('image', image);
       }
 
-      const response = await componentsAPI.create(submitData);
-      
+      let response;
+      if (isEditMode) {
+        response = await componentsAPI.update(parseInt(id), submitData);
+      } else {
+        response = await componentsAPI.create(submitData);
+      }
+
       if (response.data.success) {
         navigate('/dashboard/components');
       }
     } catch (error) {
-      console.error('Error creating component:', error);
-      setError(error.response?.data?.message || 'Failed to create component');
+      console.error(`Error ${isEditMode ? 'updating' : 'creating'} component:`, error);
+      setError(error.response?.data?.message || `Failed to ${isEditMode ? 'update' : 'create'} component`);
     } finally {
       setLoading(false);
     }
   };
 
+  if (loadingComponent) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-muted-foreground">Loading component data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Add New Component</h1>
-        <p className="text-gray-600">Add a new spare part to your inventory</p>
+        <h1 className="text-2xl font-bold text-foreground">
+          {isEditMode ? 'Edit Component' : 'Add New Component'}
+        </h1>
+        <p className="text-muted-foreground">
+          {isEditMode ? 'Update component information' : 'Add a new spare part to your inventory'}
+        </p>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded">
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg border p-6 space-y-6">
+      <form onSubmit={handleSubmit} className="bg-card rounded-lg border border-border p-6 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Component Name *
             </label>
             <input
@@ -81,20 +139,20 @@ export default function AddComponent() {
               value={formData.name}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="e.g., iPhone 12 Screen, USB Cable"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Type/Category
             </label>
             <select
               name="type"
               value={formData.type}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="">Select type</option>
               <option value="Phone Parts">Phone Parts</option>
@@ -108,7 +166,7 @@ export default function AddComponent() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Quantity
             </label>
             <input
@@ -117,13 +175,13 @@ export default function AddComponent() {
               value={formData.quantity}
               onChange={handleChange}
               min="0"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="0"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Price (USD)
             </label>
             <input
@@ -133,13 +191,13 @@ export default function AddComponent() {
               onChange={handleChange}
               min="0"
               step="0.01"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="0.00"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Supplier
             </label>
             <input
@@ -147,20 +205,20 @@ export default function AddComponent() {
               name="supplier"
               value={formData.supplier}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Supplier name"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Status
             </label>
             <select
               name="status"
               value={formData.status}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="Available">Available</option>
               <option value="Low Stock">Low Stock</option>
@@ -170,20 +228,34 @@ export default function AddComponent() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-foreground mb-2">
             Component Image
           </label>
+
+          {currentImageUrl && (
+            <div className="mb-3">
+              <p className="text-sm text-muted-foreground mb-2">Current image:</p>
+              <img
+                src={currentImageUrl}
+                alt="Current component"
+                className="h-20 w-20 object-cover rounded-lg border border-border"
+              />
+            </div>
+          )}
+
           <input
             type="file"
             accept="image/*"
             onChange={handleImageChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
           />
-          <p className="text-sm text-gray-500 mt-1">Upload an image of the component (JPG, PNG)</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {isEditMode ? 'Upload a new image to replace the current one (JPG, PNG)' : 'Upload an image of the component (JPG, PNG)'}
+          </p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-foreground mb-2">
             Description
           </label>
           <textarea
@@ -191,7 +263,7 @@ export default function AddComponent() {
             value={formData.description}
             onChange={handleChange}
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
             placeholder="Additional details about the component..."
           />
         </div>
@@ -200,14 +272,17 @@ export default function AddComponent() {
           <button
             type="submit"
             disabled={loading}
-            className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
           >
-            {loading ? 'Adding...' : 'Add Component'}
+            {loading
+              ? (isEditMode ? 'Updating...' : 'Adding...')
+              : (isEditMode ? 'Update Component' : 'Add Component')
+            }
           </button>
           <button
             type="button"
             onClick={() => navigate('/dashboard/components')}
-            className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
+            className="px-6 py-2 border border-border text-foreground rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
           >
             Cancel
           </button>
