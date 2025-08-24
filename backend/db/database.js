@@ -12,6 +12,7 @@ db.run(`
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
+    refresh_token TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )
 `);
@@ -33,5 +34,14 @@ db.run(`
     FOREIGN KEY(user_id) REFERENCES users(id)
   )
 `);
+
+// Migration: Add refresh_token column if it doesn't exist
+db.run(`
+  ALTER TABLE users ADD COLUMN refresh_token TEXT
+`, (err) => {
+  if (err && !err.message.includes('duplicate column name')) {
+    console.error('Migration error:', err.message);
+  }
+});
 
 module.exports = db;

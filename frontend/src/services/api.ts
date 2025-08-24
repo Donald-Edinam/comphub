@@ -9,6 +9,13 @@ interface ApiResponse<T = any> {
 
 interface AuthResponse {
   token: string;
+  accessToken: string;
+  refreshToken: string;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+  };
 }
 
 interface UserResponse {
@@ -39,6 +46,25 @@ const api = axios.create({
   },
 });
 
+// Flag to prevent multiple refresh attempts
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: any) => void;
+  reject: (reason?: any) => void;
+}> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) {
+      reject(error);
+    } else {
+      resolve(token);
+    }
+  });
+  
+  failedQueue = [];
+};
+
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
@@ -53,16 +79,76 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle common errors
+// Response interceptor to handle token refresh
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    // Only redirect on 401 if we're not already on a public page
-    if (error.response?.status === 401 && !window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Check if error is 401 and we haven't already tried to refresh
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // If we're already refreshing, queue this request
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return api(originalRequest);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      const refreshToken = localStorage.getItem('refreshToken');
+      
+      if (!refreshToken) {
+        // No refresh token, redirect to login
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
+
+      try {
+        const response = await api.post('/auth/refresh', { refreshToken });
+        const { accessToken, refreshToken: newRefreshToken } = response.data.data;
+        
+        // Update stored tokens
+        localStorage.setItem('token', accessToken);
+        localStorage.setItem('refreshToken', newRefreshToken);
+        
+        // Update default authorization header
+        api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+        
+        // Process queued requests
+        processQueue(null, accessToken);
+        
+        // Retry original request
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        return api(originalRequest);
+        
+      } catch (refreshError) {
+        // Refresh failed, redirect to login
+        processQueue(refreshError, null);
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        
+        // Only redirect if we're not already on a public page
+        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
+          window.location.href = '/login';
+        }
+        
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
     }
+
     return Promise.reject(error);
   }
 );
@@ -74,6 +160,12 @@ export const authAPI = {
   
   signup: (name: string, email: string, password: string): Promise<AxiosResponse<ApiResponse<UserResponse>>> => 
     api.post('/auth/signup', { name, email, password }),
+  
+  refresh: (refreshToken: string): Promise<AxiosResponse<ApiResponse<AuthResponse>>> => 
+    api.post('/auth/refresh', { refreshToken }),
+  
+  logout: (refreshToken: string): Promise<AxiosResponse<ApiResponse<null>>> => 
+    api.post('/auth/logout', { refreshToken }),
 };
 
 // Components API calls

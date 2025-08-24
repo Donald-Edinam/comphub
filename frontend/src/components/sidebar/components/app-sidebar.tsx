@@ -110,7 +110,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <span className="text-xs text-muted-foreground">Shop Owner</span>
             </div>
             <button
-              onClick={logout}
+              onClick={() => logout()}
               className="text-xs text-red-600 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50"
             >
               Logout

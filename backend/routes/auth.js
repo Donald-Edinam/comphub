@@ -50,6 +50,7 @@ router.post("/signin", (req, res, next) => {
       if (updateErr) return next(updateErr);
       
       return successResponse(res, "Login successful", { 
+        token: accessToken, // Keep 'token' for backward compatibility
         accessToken, 
         refreshToken,
         user: { id: user.id, name: user.name, email: user.email }

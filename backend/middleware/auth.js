@@ -11,7 +11,19 @@ function authenticateToken(req, res, next) {
   if (!token) return errorResponse(res, "Access denied. No token provided", 401);
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return errorResponse(res, "Invalid or expired token", 403);
+    if (err) {
+      // Check if it's an expired token
+      if (err.name === 'TokenExpiredError') {
+        return errorResponse(res, "Token expired", 401);
+      }
+      return errorResponse(res, "Invalid token", 403);
+    }
+    
+    // Make sure it's not a refresh token being used as access token
+    if (user.type === 'refresh') {
+      return errorResponse(res, "Invalid token type", 403);
+    }
+    
     req.user = user; // Attach user info to request
     next();
   });
