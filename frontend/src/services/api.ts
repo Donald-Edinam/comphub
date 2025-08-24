@@ -1,4 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
+import config from '../config/env';
 
 // API Response types
 interface ApiResponse<T = any> {
@@ -40,7 +41,7 @@ interface Component {
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: 'http://localhost:5000',
+  baseURL: config.API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
