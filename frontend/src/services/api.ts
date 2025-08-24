@@ -62,7 +62,7 @@ const processQueue = (error: any, token: string | null = null) => {
       resolve(token);
     }
   });
-  
+
   failedQueue = [];
 };
 
@@ -104,7 +104,7 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       const refreshToken = localStorage.getItem('refreshToken');
-      
+
       if (!refreshToken) {
         // No refresh token, redirect to login
         localStorage.removeItem('token');
@@ -117,33 +117,33 @@ api.interceptors.response.use(
       try {
         const response = await api.post('/auth/refresh', { refreshToken });
         const { accessToken, refreshToken: newRefreshToken } = response.data.data;
-        
+
         // Update stored tokens
         localStorage.setItem('token', accessToken);
         localStorage.setItem('refreshToken', newRefreshToken);
-        
+
         // Update default authorization header
         api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
-        
+
         // Process queued requests
         processQueue(null, accessToken);
-        
+
         // Retry original request
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);
-        
+
       } catch (refreshError) {
         // Refresh failed, redirect to login
         processQueue(refreshError, null);
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
-        
+
         // Only redirect if we're not already on a public page
         if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
           window.location.href = '/login';
         }
-        
+
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
@@ -156,38 +156,38 @@ api.interceptors.response.use(
 
 // Auth API calls
 export const authAPI = {
-  login: (email: string, password: string): Promise<AxiosResponse<ApiResponse<AuthResponse>>> => 
+  login: (email: string, password: string): Promise<AxiosResponse<ApiResponse<AuthResponse>>> =>
     api.post('/auth/signin', { email, password }),
-  
-  signup: (name: string, email: string, password: string): Promise<AxiosResponse<ApiResponse<UserResponse>>> => 
+
+  signup: (name: string, email: string, password: string): Promise<AxiosResponse<ApiResponse<UserResponse>>> =>
     api.post('/auth/signup', { name, email, password }),
-  
-  refresh: (refreshToken: string): Promise<AxiosResponse<ApiResponse<AuthResponse>>> => 
+
+  refresh: (refreshToken: string): Promise<AxiosResponse<ApiResponse<AuthResponse>>> =>
     api.post('/auth/refresh', { refreshToken }),
-  
-  logout: (refreshToken: string): Promise<AxiosResponse<ApiResponse<null>>> => 
+
+  logout: (refreshToken: string): Promise<AxiosResponse<ApiResponse<null>>> =>
     api.post('/auth/logout', { refreshToken }),
 };
 
 // Components API calls
 export const componentsAPI = {
-  getAll: (): Promise<AxiosResponse<ApiResponse<Component[]>>> => 
+  getAll: (): Promise<AxiosResponse<ApiResponse<Component[]>>> =>
     api.get('/components'),
-  
-  getById: (id: number): Promise<AxiosResponse<ApiResponse<Component>>> => 
+
+  getById: (id: number): Promise<AxiosResponse<ApiResponse<Component>>> =>
     api.get(`/components/${id}`),
-  
-  create: (formData: FormData): Promise<AxiosResponse<ApiResponse<Component>>> => 
+
+  create: (formData: FormData): Promise<AxiosResponse<ApiResponse<Component>>> =>
     api.post('/components', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     }),
-  
-  update: (id: number, formData: FormData): Promise<AxiosResponse<ApiResponse<Component>>> => 
+
+  update: (id: number, formData: FormData): Promise<AxiosResponse<ApiResponse<Component>>> =>
     api.put(`/components/${id}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     }),
-  
-  delete: (id: number): Promise<AxiosResponse<ApiResponse<null>>> => 
+
+  delete: (id: number): Promise<AxiosResponse<ApiResponse<null>>> =>
     api.delete(`/components/${id}`),
 };
 
