@@ -18,11 +18,30 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
+      // Debug logging
+      console.log('CORS Origin Request:', origin);
+
+      // Allow requests with no origin (mobile apps, curl, etc.)
+      if (!origin) {
+        console.log('No origin - allowing');
+        return callback(null, true);
       }
+
+      // Allow localhost for development
+      if (allowedOrigins.includes(origin)) {
+        console.log('Origin in allowed list - allowing');
+        return callback(null, true);
+      }
+
+      // Allow all HTTPS origins in production
+      if (origin.startsWith('https://')) {
+        console.log('HTTPS origin - allowing');
+        return callback(null, true);
+      }
+
+      // Reject HTTP origins that aren't localhost
+      console.log('Origin rejected:', origin);
+      callback(new Error("Not allowed by CORS"));
     },
     credentials: true, // if you’re sending cookies/auth headers
   })
