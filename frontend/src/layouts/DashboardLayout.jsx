@@ -16,6 +16,7 @@ import {
 } from "../components/sidebar/components/ui/sidebar";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { ThemeToggle } from "../components/ThemeToggle";
 
 export default function DashboardLayout() {
   const { user, logout } = useAuth();
@@ -51,10 +52,11 @@ export default function DashboardLayout() {
           </Breadcrumb>
           
           <div className="ml-auto flex items-center gap-4">
-            <span className="text-sm text-gray-600">Welcome, {user?.email}</span>
+            <span className="text-sm text-muted-foreground">Welcome, {user?.email}</span>
+            <ThemeToggle />
             <button 
               onClick={handleLogout}
-              className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+              className="px-3 py-1 text-sm bg-destructive text-destructive-foreground rounded hover:bg-destructive/90 transition-colors"
             >
               Logout
             </button>

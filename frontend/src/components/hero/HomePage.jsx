@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ThemeToggle } from "../ThemeToggle";
 
 const LogoIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect x="3" y="4" width="18" height="16" rx="2" stroke="#F97316" strokeWidth="2" fill="none" />
@@ -115,7 +116,8 @@ const HeaderSection = () => {
                         {item}
                     </NavLink>)}
                 </nav> */}
-                <div className="hidden md:flex space-x-2">
+                <div className="hidden md:flex items-center space-x-2">
+                    <ThemeToggle />
                     <Button variant="outline" onClick={handleSignin}>
                         Login
                     </Button>
@@ -123,7 +125,8 @@ const HeaderSection = () => {
                         Sign Up
                     </Button>
                 </div>
-                <div className="md:hidden">
+                <div className="md:hidden flex items-center space-x-2">
+                    <ThemeToggle />
                     <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="inline-flex items-center justify-center p-2 rounded-md text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-orange-500" aria-expanded={isMenuOpen} aria-controls="mobile-menu">
                         <span className="sr-only">Open main menu</span>
                         {isMenuOpen ? <CloseIcon /> : <MenuIcon />}

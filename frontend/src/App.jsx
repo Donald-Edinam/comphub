@@ -1,5 +1,6 @@
 import { Route, Routes, Navigate } from "react-router-dom"
 import { AuthProvider, useAuth } from "./context/AuthContext"
+import { ThemeProvider } from "./context/ThemeContext"
 import Home from "./pages/home/Home"
 import Signin1 from "./pages/auth/Signup"
 import Login5 from "./pages/auth/Login"
@@ -59,9 +60,11 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </ThemeProvider>
   )
 }
 

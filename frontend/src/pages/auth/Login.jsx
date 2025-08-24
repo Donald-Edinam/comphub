@@ -3,6 +3,7 @@
 import React from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { ThemeToggle } from "../../components/ThemeToggle";
 
 function Login5() {
     const [passwordVisible, setPasswordVisible] = React.useState(false);
@@ -53,7 +54,10 @@ function Login5() {
         }
     };
     return <div className="flex items-center justify-center h-screen p-4">
-        <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]  bg-orange-50 px-4 py-10 rounded-2xl">
+        <div className="absolute top-4 right-4">
+            <ThemeToggle />
+        </div>
+        <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px] bg-card px-4 py-10 rounded-2xl border">
             <div className="flex flex-col space-y-2 text-center">
                 <h1 className="text-2xl font-semibold tracking-tight">
                     Welcome back

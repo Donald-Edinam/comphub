@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Package, Home, Plus, BarChart3, Settings, User } from "lucide-react"
+import { Package, Home, BarChart3, Settings, User } from "lucide-react"
 import { useAuth } from "../../../context/AuthContext"
 import { NavMain } from "../components/nav-main"
 import {
