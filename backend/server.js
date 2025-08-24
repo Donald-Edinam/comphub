@@ -12,7 +12,7 @@ const PORT = 5000;
 const allowedOrigins = [
   "http://localhost:5173", // Vite default
   "http://localhost:5174", // Vite alt
- ""
+ "https://comphub.onrender.com/"
 ];
 
 app.use(
