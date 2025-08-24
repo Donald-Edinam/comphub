@@ -1,6 +1,5 @@
 const express = require("express");
 const cors = require("cors");
-const bodyParser = require("body-parser");
 const db = require("./db/database");
 const authRoutes = require("./routes/auth");
 const componentRoutes = require("./routes/components");
@@ -12,7 +11,7 @@ const PORT = 5000;
 const allowedOrigins = [
   "http://localhost:5173", // Vite default
   "http://localhost:5174", // Vite alt
- "https://comphub.onrender.com/"
+  "https://comphub.onrender.com"
 ];
 
 app.use(
@@ -28,7 +27,10 @@ app.use(
   })
 );
 
-app.use(bodyParser.json());
+// Preflight request
+app.options("*", cors());
+
+app.use(express.json());
 
 // Routes
 app.use("/auth", authRoutes);
